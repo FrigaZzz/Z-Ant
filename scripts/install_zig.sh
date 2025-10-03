@@ -5,7 +5,31 @@ set -euo pipefail
 SCRIPT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 REPO_ROOT=$(cd "${SCRIPT_DIR}/.." && pwd)
 ZIG_VERSION="${ZIG_VERSION:-${1:-0.14.0}}"
-ZIG_PLATFORM="${ZIG_PLATFORM:-linux-x86_64}"
+
+# Auto-detect platform if not set
+if [ -z "${ZIG_PLATFORM:-}" ]; then
+    case "$(uname -s)" in
+        Darwin)
+            case "$(uname -m)" in
+                x86_64) ZIG_PLATFORM="macos-x86_64" ;;
+                arm64) ZIG_PLATFORM="macos-aarch64" ;;
+                *) echo "error: unsupported macOS architecture: $(uname -m)" >&2; exit 1 ;;
+            esac
+            ;;
+        Linux)
+            case "$(uname -m)" in
+                x86_64) ZIG_PLATFORM="linux-x86_64" ;;
+                aarch64) ZIG_PLATFORM="linux-aarch64" ;;
+                *) echo "error: unsupported Linux architecture: $(uname -m)" >&2; exit 1 ;;
+            esac
+            ;;
+        *)
+            echo "error: unsupported operating system: $(uname -s)" >&2
+            exit 1
+            ;;
+    esac
+fi
+
 INSTALL_ROOT="${ZIG_INSTALL_ROOT:-${REPO_ROOT}/.zig-toolchain}"
 ARCHIVE_NAME="zig-${ZIG_PLATFORM}-${ZIG_VERSION}.tar.xz"
 DOWNLOAD_BASE="${ZIG_DOWNLOAD_BASE:-https://ziglang.org/download}"
